@@ -1,0 +1,204 @@
+x1=2420;
+y1=9820;
+x2=4420;
+y2=9820;
+x3=4420;
+y3=11820;
+x4=2420;
+y4=11820;
+X=0;
+Y=0;
+lastY=0;
+lastX=0;
+S=0;
+s=[];
+x=[];
+y=[];
+T=0.02;
+vx=2000;
+vy=2000;
+u=0;
+t=0;
+control_dir=0;
+%%%%%%%%%%%%%%%%%%%%%%
+POSICON.R=300;         %码盘距旋转中心的直线距离
+POSICON.THE1=160;      %旋转中心正方向与连线的夹角
+POSICON.THE2=90;       %码盘中心正方向与旋转中心正方向的夹角
+  map;
+  hold on
+  figure(1)
+  h(1)=line([0,0],[0,0]); %一些句柄的初始化
+  h(2)=line([0,0],[0,0]); 
+  h(3)=line([0,0],[0,0]); 
+  h(4)=line([0,0],[0,0]); 
+  h(5)=line([0,0],[0,0]); 
+  h(5)=line([0,0],[0,0]);
+   h(6)=line([0,0],[0,0]); 
+  h(7)=line([0,0],[0,0]); 
+  h(8)=line([0,0],[0,0]); 
+  h(9)=line([0,0],[0,0]); 
+  h(10)=line([0,0],[0,0]); 
+  h(11)=line([0,0],[0,0]);
+  h(12)=line([0,0],[0,0]);
+
+  
+start_pot.x=2420;
+start_pot.y=9820;
+start_pot.s=0;
+
+[Z,M]=set_start_pot( start_pot,POSICON,0);%设置初始位置 flag为0是按旋转中心设置，为1是按码盘设置
+%绘制贝塞尔曲线
+figure(1)
+%%axis([0,5000,0,5000])
+hold on
+for i=1:1:1000
+    u=u+0.001;
+    x(i) =x1*(1-u)^3+3*x2*(1-u)^2*u+3*x3*(1-u)*u^2+x4*u^3;
+    y(i) =y1*(1-u)^3+3*y2*(1-u)^2*u+3*y3*(1-u)*u^2+y4*u^3;
+%      plot(x(i),y(i),'g.','MarkerSize',5)
+%     hold on
+end
+    X=start_pot.x+vx*T;
+    Y=start_pot.y+vy*T;   
+    lastX=X;
+    lastY=Y;
+k=1;
+
+%%%%%%%%%%%%%%%%%%%%
+sum_x=0;
+sum_y=0;
+b=0;
+for b=1:1:999
+    sum_x=sum_x+abs(x(b)-x(b+1));
+    sum_y=sum_y+abs(y(b)-y(b+1));
+end
+%%%%%%%%%%%%%%%%%%%%
+%  while (sqrt(x4^2+y4^2)-S)>=10   
+%      S=sqrt(X^2+Y^2);
+% xielv(k)=[];
+while (abs(x4-X)>=30)||(abs(y4-Y)>=30)  
+xielv(k)=(x(k+1)-x(k))/(y(k+1)-y(k));
+     %判断曲率
+    if (xielv(k)>=0)&&(xielv(k)<1)
+        control_dir=1;%y
+        Y=lastY+vy*T;
+        X=lastX;
+    end
+    if xielv(k)>=1
+        control_dir=2;%x
+        X=lastX+vx*T;
+        Y=lastY;
+    end
+
+        
+        if xielv(k)<=-1
+            control_dir=4;%x
+            X=lastX-vx*T;
+                Y=lastY;
+        end
+                if (xielv(k)<0)&&(xielv(k)>-1)
+                control_dir=3;%y
+                 Y=lastY+vy*T;
+                 X=lastX;
+                end
+    
+
+%插值
+if control_dir==1
+    
+    for a=1:1:999
+        if (Y>=y(a))&&(Y<y(a+1))
+            uD=(Y-y(a))/(y(a+1)-y(a));
+            u=a/1000+uD*(y(a+1)-y(a))/sum_y;
+            k=a;
+            
+            break;
+        else if Y<y(1)
+            uD=Y/abs(y(1)-y1);
+            u=uD/sum_y;
+            k=1;
+
+            break;
+            end
+        end
+    end
+else if control_dir==2
+        for a=1:1:999
+        if (X>=x(a))&&(X<x(a+1))
+            uD=(X-x(a))/(x(a+1)-x(a));
+%             uD= interp1(x(a),x(a+1),X,'linear');
+            u=a/1000+uD*(x(a+1)-x(a))/sum_x;
+            k=a;
+            %%%%%%%
+            
+            %%%%%%
+            break;
+        else if X<x(1)
+            uD=X/abs(x(1)-x1);
+            u=uD/sum_x;
+            k=1;
+            break;
+            end
+        end
+    end
+    
+    else if control_dir==3
+            for a=1:1:999
+        if (Y>=y(a))&&(Y<y(a+1))
+            uD=(Y-y(a))/(y(a+1)-y(a));
+            u=a/1000+uD*(y(a+1)-y(a))/sum_y;
+            k=a;
+            
+            break;
+        else if Y<y(1)
+            uD=Y/abs(y(1)-y1);
+            u=uD/sum_y;
+            k=1;
+
+            break;
+            end
+        end
+    end
+        else if control_dir==4
+                for a=1:1:999
+        if (X<=x(a))&&(X>x(a+1))
+            uD=(X-x(a))/(x(a+1)-x(a));
+            u=a/1000+uD*(x(a)-x(a+1))/sum_x;
+            k=a;
+            break;
+        else if X>x(k+1)
+                u=u+abs(X-x(k))/(abs(x(k+1)-k(k)));
+%         else if X>x(1)
+%             uD=X/abs(x(1)-x1);
+%             u=uD/sum_x;
+%             k=1;
+            break;
+            end
+        end
+    end
+             %%
+            end
+        end
+    end
+end
+    %求另一方向的目标值
+    if (control_dir==2)||(control_dir==4)
+%         plot(X,4800,'b.','MarkerSize',10)
+    Y=y1*(1-u)^3+3*y2*(1-u)^2*u+3*y3*(1-u)*u^2+y4*u^3;   
+    else if (control_dir==1)||(control_dir==3)
+%             plot(X,4800,'g.','MarkerSize',10)
+        X=x1*(1-u)^3+3*x2*(1-u)^2*u+3*x3*(1-u)*u^2+x4*u^3; 
+        else
+%              plot(5000,4800,'y*','MarkerSize',10)
+        end
+    end
+    Z.x=X;
+    Z.y=Y;
+     h=draw_init(h);
+[M,h]=car_show( Z,POSICON,h);
+     plot(X,Y,'-');
+    t=t+0.02;
+        pause(0.0005); 
+    lastY=Y;
+    lastX=X;
+end
